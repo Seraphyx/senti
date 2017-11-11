@@ -8,6 +8,8 @@ To compare word embeddings like **word2vec** we can use Positive Pointwise Mutua
 
 We compare the embeddings from our gaming corpus and compare it with Goog'e N-Gram datasets comprising of about 6% of all books ever published. We can also compare it with COHA which is designed to be genre balanced.
 
+## Visualizing Algorithm
+
 To visualize semantic change for a word w<sub>i</sub> in two dimensions we employed the following procedure, which relies on the t-SNE embedding method (Van der Maaten and Hinton, 2008) as a subroutine:
 1. Find the union of the word wi’s k nearest neighbors over all necessary time-points.
 2. Compute the t-SNE embedding of these words on the most recent (i.e., the modern) time-point.
@@ -19,8 +21,18 @@ makes sense given that these are the current meanings
 of these words. This approximation is necessary,
 since in reality all words are moving.
 
+## Embedding Strategies
+SGNS and PPMI.
+PPMI method benefited substantially from larger contexts, so we did not remove any lowfrequency words per year from the context for that method. The other embedding approaches did not appear to benefit from the inclusion of these lowfrequency terms, so they were dropped for computational efficiency.
+
+
+## Windows Linux
+`C:\Users\<windows-username>\AppData\Local\lxss\home\<linux-username>`
+
+
 `
-pip install --upgrade tensorflow
-pip install --upgrade keras
-pip install --upgrade gensim
+pip install --upgrade tensorflow keras gensim thinc
+conda config --add channels conda-forge
+conda install spacy
+
 `
