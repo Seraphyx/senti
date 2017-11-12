@@ -34,5 +34,27 @@ PPMI method benefited substantially from larger contexts, so we did not remove a
 pip install --upgrade tensorflow keras gensim thinc
 conda config --add channels conda-forge
 conda install spacy
-
 `
+
+
+
+## Docker
+
+### Building Docker Image
+Build with name
+`
+docker build -t senti .
+`
+
+### View images
+`docker images`
+
+### Run the container
+We mount the notebook folder to our container. We expose 8888 for Jupyter Notebooks, and 5000 for SpaCy visualizations.
+`
+docker run -it --rm -p 8888:8888 -p 5000:5000 --user root -e GRANT_SUDO=yes -v ${pwd}:/home/jovyan/work senti
+`
+
+
+## Misc
+Consider adding **tqdm** for progressbars in Jupyter.
