@@ -50,6 +50,9 @@ RUN python -m spacy download en_vectors_web_lg
 RUN pip install --upgrade jupyterthemes
 RUN jt -t onedork
 
+# Install Empoji package
+RUN pip install -y emojipedia
+
 # ENV XDG_CACHE_HOME /home/$NB_USER/.cache/
 
 # RUN MPLBACKEND=Agg python -c "import matplotlib.pyplot" && \
