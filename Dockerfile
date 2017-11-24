@@ -31,7 +31,7 @@ MAINTAINER Jupyter Project <jupyter@googlegroups.com>
 
 
 # Install Spacy
-RUN  conda install -y -c conda-forge spacy
+RUN conda install -y -c conda-forge spacy
 
 # Install all English Models
 RUN python -m spacy download en
@@ -43,15 +43,12 @@ RUN python -m spacy download en_vectors_web_lg
 # Install NLTK
 RUN conda install -c anaconda nltk
 
-# Install all English Models
-RUN python -m spacy download en_vectors_web_lg
-
 # Jupyter Theme
 RUN pip install --upgrade jupyterthemes
 RUN jt -t onedork
 
 # Install Empoji package
-RUN pip install -y emojipedia
+RUN pip install emojipedia
 
 # ENV XDG_CACHE_HOME /home/$NB_USER/.cache/
 
