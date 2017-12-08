@@ -50,6 +50,8 @@ Build with name
 ### Run the container
 We mount the notebook folder to our container. We expose 8888 for Jupyter Notebooks, and 5000 for SpaCy visualizations.
 `docker run -it --rm -p 8888:8888 -p 5000:5000 --user root -e GRANT_SUDO=yes -v ${pwd}:/home/jovyan/work senti`
+For Liunux/OSX use:
+`docker run -it --rm -p 8888:8888 -p 5000:5000 --user root -e GRANT_SUDO=yes -v `pwd`:/home/jovyan/work senti`
 
 
 ## Misc
