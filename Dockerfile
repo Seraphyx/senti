@@ -5,14 +5,14 @@ FROM jupyter/tensorflow-notebook
 MAINTAINER Jupyter Project <jupyter@googlegroups.com>
 
 
-# # Set the working directory to /app
-# WORKDIR /app
+# Set the working directory to /app
+WORKDIR /app
 
-# # Copy the current directory contents into the container at /app
-# ADD . /app
+# Copy the current directory contents into the container at /app
+ADD . /app
 
 # Install any needed packages specified in requirements.txt
-# RUN pip3 install -r requirements.txt
+RUN pip install -r requirements.txt
 
 # # Make port 80 available to the world outside this container
 # EXPOSE 80
@@ -44,11 +44,9 @@ RUN python -m spacy download en_vectors_web_lg
 RUN conda install -c anaconda nltk
 
 # Jupyter Theme
-RUN pip install --upgrade jupyterthemes
-RUN jt -t onedork
+# RUN pip install --upgrade jupyterthemes
+# RUN jt -t onedork
 
-# Install Empoji package
-RUN pip install emojipedia
 
 # ENV XDG_CACHE_HOME /home/$NB_USER/.cache/
 
@@ -56,6 +54,10 @@ RUN pip install emojipedia
 #     fix-permissions /home/$NB_USER
 
 
+# Clone Hierarchical Attention Network
+RUN cd /home/jovyan && \
+	git clone https://github.com/ematvey/hierarchical-attention-networks.git && \
+	wget -O yelp_academic_dataset_review.json https://github.com/rekiksab/Yelp/raw/master/yelp_challenge/yelp_phoenix_academic_dataset/yelp_academic_dataset_review.json
 
 # USER $NB_USER
 
