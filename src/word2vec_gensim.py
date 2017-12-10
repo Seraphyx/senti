@@ -7,9 +7,17 @@ import numpy as np
 import urllib.request
 import os
 import zipfile
+import platform
+
+
 
 vector_dim = 300
-root_path = "/Users/jasonpark/documents/project/senti/data/"
+
+plat = platform.platform()
+if "Windows" in plat:
+    root_path = "G:/Projects/senti/data/example/" 
+else:
+    root_path = "/Users/jasonpark/documents/project/senti/data/"
 
 def maybe_download(filename, url, expected_bytes):
     """Download a file if not present, and make sure it's the right size."""
@@ -78,11 +86,15 @@ def gensim_demo():
 
     print("=== Extract index from data")
     str_data = read_data(root_path + filename)
-    index_data = convert_data_to_index(str_data, model.wv)
+    str_decoded = [s.decode('utf-8') for s in str_data[:30]]
+    index_data = convert_data_to_index(str_decoded, model.wv)
+    index_custom = convert_data_to_index(['I','love','game','early'], model.wv)
     print("\t Original Text")
     print(str_data[:30])
     print("\t Index")
-    print(index_data[:30])
+    print(index_data)
+    print("\t Index (Custom)")
+    print(index_custom)
 
     # save and reload the model
     print("=== Saving Model")
@@ -90,6 +102,7 @@ def gensim_demo():
 
 
 if __name__ == "__main__":
+
     run_opt = 1
     if run_opt == 1:
         gensim_demo()
