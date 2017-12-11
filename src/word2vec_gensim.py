@@ -1,5 +1,5 @@
 import gensim
-from gensim.models import word2vec
+from gensim.models import word2vec, Word2Vec
 import logging
 
 import numpy as np
@@ -11,13 +11,19 @@ import platform
 
 
 
+def GetDataDir():
+    plat = platform.platform()
+    if "Windows" in plat:
+        return "G:/Projects/senti/data/example/" 
+    else:
+        return "/Users/jasonpark/documents/project/senti/data/"
+
+root_path = GetDataDir()
 vector_dim = 300
 
-plat = platform.platform()
-if "Windows" in plat:
-    root_path = "G:/Projects/senti/data/example/" 
-else:
-    root_path = "/Users/jasonpark/documents/project/senti/data/"
+# Directory full of sentences
+# i.e.: https://archive.ics.uci.edu/ml/machine-learning-databases/00311/
+text_directory = os.path.join(root_path, 'sentences/SentenceCorpus/unlabeled_articles/arxiv_unlabeled')
 
 def maybe_download(filename, url, expected_bytes):
     """Download a file if not present, and make sure it's the right size."""
@@ -31,6 +37,22 @@ def maybe_download(filename, url, expected_bytes):
         print(
             'Failed to verify ' + filename + '. Can you get to it with a browser?')
     return filename
+
+
+class Sentences(object):
+    '''
+    Read all text files within a given directory.
+    Each new line is considered a new sentence.
+    '''
+    def __init__(self, text_directory):
+        self.text_directory = text_directory
+
+    def __iter__(self):
+        for text_file in os.listdir(self.text_directory):
+            print("\tText File:", str(text_file))
+            for line in open(os.path.join(self.text_directory, text_file)):
+                yield line.split()
+
 
 # convert the input data into a list of integer indexes aligning with the wv indexes
 # Read the data into a list of strings.
@@ -101,9 +123,21 @@ def gensim_demo():
     model.save(root_path + "mymodel")
 
 
+def load_model(model_path):
+
+    print("=== Loading Model")
+    model = Word2Vec.load(model_path)
+
+    print(model.wv['computer'])
+
 if __name__ == "__main__":
 
-    run_opt = 1
+    run_opt = -4
+
+    sent = Sentences(text_directory)
+    for file in sent:
+        print(file)
+
     if run_opt == 1:
         gensim_demo()
     elif run_opt == 2:
@@ -114,3 +148,7 @@ if __name__ == "__main__":
         model = gensim.models.Word2Vec.load(root_path + "mymodel")
         embedding_matrix = create_embedding_matrix(model)
         keras_model(embedding_matrix, model.wv)
+    elif run_opt == 4:
+        load_model(root_path + 'mymodel')
+
+
