@@ -1,8 +1,9 @@
 import gensim
-from gensim.models import word2vec, Word2Vec
+from gensim.models import word2vec, Word2Vec, phrases, Phrases, KeyedVectors
 import logging
 
 import numpy as np
+import pandas as pd
 
 import urllib.request
 import os
@@ -14,7 +15,7 @@ import platform
 def GetDataDir():
     plat = platform.platform()
     if "Windows" in plat:
-        return "G:/Projects/senti/data/example/" 
+        return "G:/Projects/senti/data/" 
     else:
         return "/Users/jasonpark/documents/project/senti/data/"
 
@@ -23,7 +24,7 @@ vector_dim = 300
 
 # Directory full of sentences
 # i.e.: https://archive.ics.uci.edu/ml/machine-learning-databases/00311/
-text_directory = os.path.join(root_path, 'sentences/SentenceCorpus/unlabeled_articles/arxiv_unlabeled')
+text_directory = os.path.join(root_path, 'sentences/SentenceCorpus/unlabeled_articles/arxiv_unlabeled_mod')
 
 def maybe_download(filename, url, expected_bytes):
     """Download a file if not present, and make sure it's the right size."""
@@ -49,9 +50,71 @@ class Sentences(object):
 
     def __iter__(self):
         for text_file in os.listdir(self.text_directory):
-            print("\tText File:", str(text_file))
+            # print("\tText File:", str(text_file))
             for line in open(os.path.join(self.text_directory, text_file)):
                 yield line.split()
+
+    # Convert Unicode, Lowercase, remove numbers, extract named entities, etc.
+    def CleanWords(self):
+        pass
+
+class TrainWord2Vec(object):
+    '''
+    Train a Word2Vec model with the outputs
+    
+    User index to word to extract the index
+    https://radimrehurek.com/gensim/models/keyedvectors.html
+          model.wv.index2word
+    Or use the wv to get the indexes
+    https://radimrehurek.com/gensim/models/word2vec.html
+          model.wv
+    '''
+
+    def __init__(self, sentences, model_path=None, save_path=None):
+        self.sentences  = sentences
+        self.model_path = model_path
+        self.save_path  = save_path
+        self.train()
+
+    def load_word2vec(self):
+        print('=== Loading Word2Vec model from: %s', self.model_path)
+        model = Word2Vec.load(self.model_path)
+
+
+    def train(self):
+
+        if self.model_path is not None:
+            model = self.load_word2vec()
+        else:
+            print("=== Training new Word2Vec model")
+        
+        # Logging
+        logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+
+        # Start Training with new sentences
+        model = Word2Vec(self.sentences)
+
+        # Demo
+        print(model.wv['computer'])
+
+        # Save Model
+        if self.save_path is not None: 
+            print('=== Saving Word2Vec model to: %s', self.save_path)
+            model.save(self.save_path)
+
+
+        # Create a word embedding
+        word_embedding = []
+        for word in model.wv.index2word:
+                word_embedding.append(model.wv[word])
+
+        word_embedding_df = pd.DataFrame(word_embedding, index=model.wv.index2word)
+
+
+        # Save Model
+        self.model = model
+        self.word_embedding = word_embedding_df
+
 
 
 # convert the input data into a list of integer indexes aligning with the wv indexes
@@ -123,20 +186,36 @@ def gensim_demo():
     model.save(root_path + "mymodel")
 
 
-def load_model(model_path):
 
-    print("=== Loading Model")
-    model = Word2Vec.load(model_path)
-
-    print(model.wv['computer'])
 
 if __name__ == "__main__":
 
     run_opt = -4
 
+    # Read Sentences
     sent = Sentences(text_directory)
-    for file in sent:
-        print(file)
+
+    # Make Word2Vec Model
+    model = TrainWord2Vec(sent, model_path=os.path.join(root_path, 'example/mymodel'))
+    print(model.model.wv)
+    print(type(model.model.wv))
+
+    for index, word in enumerate(model.model.wv.index2word):
+        print(index, ':', word)
+        if index > 10:
+            break
+
+
+
+    print(model.word_embedding.head())
+
+    # i_keep = 0
+    # for v in model.model.wv:
+    #     print(v)
+
+    #     i_keep += 1
+    #     if i_keep > 10:
+    #         break
 
     if run_opt == 1:
         gensim_demo()
