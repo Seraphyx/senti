@@ -56,3 +56,20 @@ For Liunux/OSX use:
 
 ## Misc
 Consider adding **tqdm** for progressbars in Jupyter.
+
+
+
+# Modeling
+There are various steps where we can intervene and modify to generate a better performing model. Of course, we can run through a battery of models and grid search through each model's respective hyper-parameters, but we can also change the preprocessing steps:
+1. **Data Clean**
+⋅⋅* **TFIDF**: Get only words with discrinatory power, or leave them in if the model is expressive enough to take advantage of the context.
+..* **Named Entity Recognition** (**NER**): We can generalize the entities into categories. If, for example, we leave **Star Wars: Battlefront II** as a token we can avoid having the individual words (*Star*, *Wars*, etc.) mean something that we don't want. Also, if we tag this as a **Game (Noun)** and hash it as just that, then we can avoid biasing this entity since the mere presence of **SWBF2** will have negative sentiment otherwise even though people may talk about it favorably.
+..* **Part of Speech** (**POS**): We can take the parts of speech such as Verb, Adjective, Noun, etc to give Homonyms separate tokens and perhaps even capture the Polysemic usage into its correct usage. For example, we can perhaps use it as **Duck|Noun** vs **Duck|Verb** as a token. See SpaCy or SyntaxNet. We can also use as an embedding either at the end of the token vector.
+2. **Vectorize**
+..* **Word2Vec**: We can use Google's Word2Vec bank or Glove's representation. We can also train our own using Skip-Gram, since our training dataset may be genre specific.
+3. **Model**
+
+
+
+
+
