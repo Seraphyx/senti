@@ -8,9 +8,10 @@ data_path = "../data/raw/movie_reviews"
 
 class data(object):
 
-	def __init__(self, file):
+	def __init__(self, file=None, dataset=None):
 		self.file = file
-		self.data = self.read_tsv()
+		self.dataset = dataset
+		self.read_dataset()
 
 	def read_tsv(self):
 		with open(self.file,'rb') as tsvin:
@@ -20,17 +21,32 @@ class data(object):
 		    if i > 10: 
 		    	break
 
-		return tsvin
+		self.data = tsvin
 
-movie_train = load_files(data_path, shuffle=True)
-print(len(movie_train.data))
-print(movie_train.keys())
-print(movie_train.DESCR)
-print(movie_train.filenames)
-print(movie_train.data[0:3])
+	def read_acllmdb(self):
+		movie_train = load_files(data_path, shuffle=True)
+		self.data = {
+			'x': [x.decode("utf-8") for x in movie_train.data],
+			'y': movie_train.target
+		}
 
-# target names ("classes") are automatically generated from subfolder names
-print(movie_train.target_names)
+	def read_dataset(self):
+		# Toy datasets are set here
+		if self.dataset == 'acllmdb':
+			self.read_acllmdb()
+		elif self.dataset == 'tsv':
+			self.read_tsv()
+		else:
+			print("No dataset provided.")
 
-# test = data(file='../data/imdb/labeledTrainData.tsv')
-# print(test)
+
+if __name__ == '__main__':
+
+	movie_train = data(dataset='acllmdb')
+	print(type(movie_train.data))
+	print(len(movie_train.data['x']))
+	print(len(movie_train.data['y']))
+	# print(movie_train.keys())
+	# print(movie_train.DESCR)
+	# print(movie_train.filenames)
+	# print(movie_train.data[0:3])
