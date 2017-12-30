@@ -24,6 +24,7 @@ class data(object):
 		self.data = tsvin
 
 	def read_acllmdb(self):
+		# Movie review Sentiment: http://www.nltk.org/nltk_data/
 		movie_train = load_files(data_path, shuffle=True)
 		self.data = {
 			'x': [x.decode("utf-8") for x in movie_train.data],
@@ -42,25 +43,13 @@ class data(object):
 
 if __name__ == '__main__':
 
-	# movie_train = data(dataset='acllmdb')
-	# print(type(movie_train.data))
-	# print(len(movie_train.data['x']))
-	# print(len(movie_train.data['y']))
+	movie_train = data(dataset='acllmdb')
+	print(type(movie_train.data))
+	print(len(movie_train.data['x']))
+	print(len(movie_train.data['y']))
 	# print(movie_train.keys())
 	# print(movie_train.DESCR)
 	# print(movie_train.filenames)
 	# print(movie_train.data[0:3])
+	
 
-	test = {
-	'a': 1,
-	'b': 2
-	}
-	print(list(test.values()))
-	print('a')
-	print('a'.encode())
-
-	a = []
-	a.append('yolo')
-	a.append([1,2,3])
-	a.append('swag')
-	print(a)

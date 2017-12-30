@@ -1,8 +1,7 @@
+import sys
+
 from keras_text.processing import WordTokenizer
 from keras_text.data import Dataset
-
-import keras_text.models as test
-
 from keras_text.models.token_model import TokenModelFactory
 from keras_text.models import YoonKimCNN, AttentionRNN, StackedRNN
 from keras_text.utils import dump, load
@@ -10,9 +9,15 @@ from keras_text.utils import dump, load
 
 import load_data
 
+# Overcome pickle recurssion limit
+sys.setrecursionlimit(10000)
 
 '''
 See: https://raghakot.github.io/keras-text/
+* You may need to fix the imports in keras_text to have a period in front in the model/__init__.py file
+* For Python 3 you must make the dictionary.values() to be wrapped in list()
+* If you cannot download the SpaCy en model in Windows 10 then run as admin
+* If you hit a recussion limit when using utils.dump then set a higher limit: sys.setrecursionlimit(10000)
 '''
 
 # tokenizer = WordTokenizer()
@@ -42,10 +47,10 @@ if __name__ == '__main__':
 		print("=== Building Dataset")
 		ds = Dataset(data.data['x'], data.data['y'], tokenizer=tokenizer)
 		ds.update_test_indices(test_size=0.1)
-		ds.save('../data/dataset')
+		ds.save('../data/dataset/dataset_example')
 	else:
 		print("=== Loading Saved Dataset")
-		ds = Dataset(data.data['x'], data.data['y']).load('../data/dataset')
+		ds = Dataset(data.data['x'], data.data['y']).load('../data/dataset/dataset_example')
 		print(ds)
 		print(type(ds))
 		print(vars(ds).keys())
@@ -64,13 +69,13 @@ if __name__ == '__main__':
 		model.summary()
 
 		# Save
-		dump(factory, file_name='../data/factory_example')
-		dump(model, file_name='../data/YoonKimCNN_example')
+		dump(factory, file_name='../data/embeddings/factory_example')
+		dump(model, file_name='../data/models/YoonKimCNN_example')
 	else:
 		print("=== Loading Embeddings")
-		factory = load(file_name='../data/factory_example')
+		factory = load(file_name='../data/embeddings/factory_example')
 		print("=== Loading Model")
-		model   = load(file_name='../data/YoonKimCNN_example')
+		model   = load(file_name='../data/models/YoonKimCNN_example')
 
 
 	# Make predictions
@@ -92,15 +97,12 @@ if __name__ == '__main__':
 			print('\t\tWorking on sentence %d' % (i + 1))
 			sentence_embedding = []
 			for j, word in enumerate(sentence):
-
 				word_embedding = factory.embeddings_index[word.encode()]
-				if j == 0:
-					sentence_embedding = [word_embedding]
-				else:
-					sentence_embedding = sentence_embedding.append(word_embedding)
-			ds_embedding = ds_embedding.append(sentence_embedding)
+				if word_embedding is not None:
+					sentence_embedding.append(word_embedding)
 
-		print(ds_embedding)
-		# print("\t--- Feeding tokenized text to model")
-		# pred = model.fit(x=['I thought the movie was terrible', 'Very fun and exciting'])
-		# print(pred)
+			ds_embedding.append(sentence_embedding)
+
+		print("\t--- Feeding tokenized text to model")
+		pred = model.fit(x=ds_embedding)
+		print(pred)
