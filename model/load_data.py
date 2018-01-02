@@ -43,13 +43,29 @@ class data(object):
 
 if __name__ == '__main__':
 
-	movie_train = data(dataset='acllmdb')
-	print(type(movie_train.data))
-	print(len(movie_train.data['x']))
-	print(len(movie_train.data['y']))
+	# movie_train = data(dataset='acllmdb')
+	# print(type(movie_train.data))
+	# print(len(movie_train.data['x']))
+	# print(len(movie_train.data['y']))
 	# print(movie_train.keys())
 	# print(movie_train.DESCR)
 	# print(movie_train.filenames)
 	# print(movie_train.data[0:3])
-	
+
+	# ds = Dataset(data.data['x'], data.data['y']).load('../data/dataset/dataset_example')
+	import numpy as np
+	doc_zeros   = np.zeros(100)
+	print(doc_zeros.shape)
+	test = [1,2,3,4]
+	print(test)
+	test = np.array(test)
+	print(test)
+	print(test.shape)
+	doc_zeros[:test.size] = test
+	print(doc_zeros)
+	print(doc_zeros.shape)
+
+	print(test.size)
+	print(min(100, test.size))
+
 

@@ -1,17 +1,12 @@
-from __future__ import unicode_literals
-
 import sys
-from pprint import pprint
+import os
 
-import numpy as np
-
-
-from keras_text.processing import WordTokenizer, SentenceWordTokenizer
+from keras_text.processing import WordTokenizer
 from keras_text.data import Dataset
 from keras_text.models.token_model import TokenModelFactory
 from keras_text.models import YoonKimCNN, AttentionRNN, StackedRNN
 from keras_text.utils import dump, load
-from keras.utils import to_categorical
+
 
 import load_data
 
@@ -29,6 +24,32 @@ See: https://raghakot.github.io/keras-text/
 # tokenizer = WordTokenizer()
 # tokenizer.build_vocab(texts)
 
+
+
+def save_folder(folder_path):
+	'''
+	Create folder and subfolders to save results
+	'''
+	if not os.path.exists(folder_path):
+    	os.makedirs(folder_path)
+    	os.makedirs(folder_path + '/models')
+    	os.makedirs(folder_path + '/embeddings')
+    	os.makedirs(folder_path + '/data')
+    	os.makedirs(folder_path + '/diagnostics')
+    	os.makedirs(folder_path + '/results')
+
+
+def build_tokenizer(data):
+	print("=== Building Tokenizer")
+	tokenizer = WordTokenizer()
+	tokenizer.build_vocab(data.data['x'])
+	return tokenizer
+
+def build_dataset(data, tokenizer):
+	print("=== Building Dataset")
+	ds = Dataset(data.data['x'], data.data['y'], tokenizer=tokenizer)
+	ds.update_test_indices(test_size=0.1)
+	return ds
 
 # Trail a sentence level model
 def train_han(tokenizer):
@@ -57,11 +78,15 @@ def train_han(tokenizer):
 
 if __name__ == '__main__':
 
+	# Save all results into a directory
+	save_directory = '../data/train_han'
+	save_folder(save_directory)
+
+
 	# Steps to perform
 	BUILD_TOKENIZER = False
 	BUILD_DATASET   = False
-	CONFIG_MODEL	= True
-	TRAIN_MODEL     = True
+	TRAIN_MODEL     = False
 	INFERENCE       = True
 
 	# Read data
@@ -70,51 +95,28 @@ if __name__ == '__main__':
 
 	# Build a token. Be default it uses 'en' model from SpaCy
 	if BUILD_TOKENIZER:
-		print("=== Building Tokenizer")
-		tokenizer = SentenceWordTokenizer()
-		tokenizer.build_vocab(data.data['x'])
+		tokenizer = build_tokenizer(data)
 
 	# Build a Dataset
 	if BUILD_DATASET:
-		print("=== Building Dataset")
-		ds = Dataset(data.data['x'], data.data['y'], tokenizer=tokenizer)
-		ds.update_test_indices(test_size=0.1)
-		ds.save('../data/dataset/dataset_example')
+		ds = build_dataset(data, tokenizer)
+		ds.save(os.path.join(save_directory, 'dataset', 'dataset_example'))
 	else:
 		print("=== Loading Saved Dataset")
-		ds = load(file_name='../data/dataset/dataset_example')
+		ds = Dataset(data.data['x'], data.data['y']).load(os.path.join(save_directory, 'dataset', 'dataset_example'))
 		print(ds)
 		print(type(ds))
 		print(vars(ds).keys())
-		print(ds.X.tolist()[0:3])
-		print(ds.y.tolist()[0:3])
 		tokenizer = ds.tokenizer
 
-	print(":::::::::::::::: tokenizer.get_stats")
-	print(ds.tokenizer.get_stats(0))
-	print(":::::::::::::::: tokenizer.get_stats")
-	print(ds.tokenizer.get_stats(1))
-
-	# Build training data
-	X_train = ds.tokenizer.encode_texts(ds.X.tolist()[1:100])
-	X_train = ds.tokenizer.decode_texts(ds.X)
-
-	print(X_train.shape)
-	print(X_train[1:100])
-
-	sys.exit("Stop here")
-
-
-
-
 	# Will automagically handle padding for models that require padding (Ex: Yoon Kim CNN)
-	if CONFIG_MODEL:
+	if TRAIN_MODEL:
 		print("=== Tokenizing Dataset and Padding")
 		factory = TokenModelFactory(1, tokenizer.token_index, max_tokens=100, embedding_type='glove.6B.100d')
 		word_encoder_model = YoonKimCNN()
 
 		# Train Model
-		print("=== Configuring Model")
+		print("=== Training Model")
 		model = factory.build_model(token_encoder_model=word_encoder_model)
 		model.compile(optimizer='adam', loss='categorical_crossentropy')
 		model.summary()
@@ -123,30 +125,16 @@ if __name__ == '__main__':
 		dump(factory, file_name='../data/embeddings/factory_example')
 		dump(model, file_name='../data/models/YoonKimCNN_example')
 	else:
-		print("=== Loading Embeddings Configuration")
+		print("=== Loading Embeddings")
 		factory = load(file_name='../data/embeddings/factory_example')
-		print("=== Loading Model Configuration")
+		print("=== Loading Model")
 		model   = load(file_name='../data/models/YoonKimCNN_example')
-
-
-	if TRAIN_MODEL:
-		print("=== Training Model")
-
-		# Build training data
-		X_train = tokenizer.encode_texts(ds.X.tolist())
-		X_train = tokenizer.decode_texts(ds.X)
-
-		print(X_train[0:3])
-
-		model.fit(X_train, ds.y,
-			epochs=20,
-			batch_size=128)
 
 
 	# Make predictions
 	if INFERENCE:
 		print("=== Making Inference")
-		data_infer = ['I thought the movie was terrible']
+		data_infer = ['I thought the movie was terrible', 'Very fun and exciting']
 
 		print("\t--- Tokenizing raw inference dataset")		
 		print(vars(tokenizer).keys())
@@ -154,52 +142,20 @@ if __name__ == '__main__':
 		ds_decode = tokenizer.decode_texts(ds_infer)
 		print(ds_infer)
 		print(ds_decode)
-		print(':::::::::::::: FACTORY')
 		print(type(factory))
-		print(vars(factory).keys())
-		print(factory.embedding_dims)
-		print(factory.max_tokens)
 
 		# Convert words to vector embeddings
-		ds_embedding = np.array([])
+		ds_embedding = []
 		for i, sentence in enumerate(ds_decode):
 			print('\t\tWorking on sentence %d' % (i + 1))
-			sentence_embedding = np.array([]).reshape(0,100)
+			sentence_embedding = []
 			for j, word in enumerate(sentence):
 				word_embedding = factory.embeddings_index[word.encode()]
-				print("word_embedding.shape")
-				print(word_embedding.shape)
 				if word_embedding is not None:
-					sentence_embedding = np.vstack([sentence_embedding, [word_embedding]])
-					print(sentence_embedding.shape)
+					sentence_embedding.append(word_embedding)
 
-			ds_embedding = np.append([ds_embedding], [sentence_embedding])
-
-		print("::::::::::::::::: ds_embedding")
-		print(ds_embedding.shape)
-		print("::::::::::::::::: sentence_embedding")
-		print(sentence_embedding.shape)
-		print("::::::::::::::::: model")
-		print(vars(model).keys())
-
-		# print(ds_embedding[0][0])
-		# print(ds_embedding[0][0].shape)
-		# print(ds_embedding[0][0].T.shape)
-
-
-		# Describe the model
-		print("::::::::::::::::: model.summary")
-		model.summary()
-		print("::::::::::::::::: model.get_config")
-		pprint(model.get_config())
-		# model.save_weights('../data/models/YoonKimCNN_example_weights')
-
-
-
-
+			ds_embedding.append(sentence_embedding)
 
 		print("\t--- Feeding tokenized text to model")
-		y_binary = to_categorical(np.array([1, 0, 1, 0, 1, 0]))
-		print(y_binary.shape)
-		pred = model.predict(x=sentence_embedding, verbose=1)
+		pred = model.fit(x=ds_embedding)
 		print(pred)
