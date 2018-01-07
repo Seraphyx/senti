@@ -1,19 +1,31 @@
 from __future__ import unicode_literals
 
 import sys
+import os
 from pprint import pprint
 
 import numpy as np
+import pandas as pd
+
+from keras.utils import to_categorical
+from keras.models import load_model
 
 
 from keras_text.processing import WordTokenizer, SentenceWordTokenizer
 from keras_text.data import Dataset
 from keras_text.models.token_model import TokenModelFactory
+from keras_text.models.sentence_model import SentenceModelFactory
 from keras_text.models import YoonKimCNN, AttentionRNN, StackedRNN
 from keras_text.utils import dump, load
-from keras.utils import to_categorical
+
 
 import load_data
+
+data_base = '../data'
+
+MAX_SENTS = 100
+MAX_TOKENS = 100
+
 
 # Overcome pickle recurssion limit
 sys.setrecursionlimit(10000)
@@ -30,6 +42,101 @@ See: https://raghakot.github.io/keras-text/
 # tokenizer.build_vocab(texts)
 
 
+def initialize_dir(root_dir):
+
+	folder_list = ['dataset','embeddings','models']
+
+	for subfolder in folder_list:
+		subfolder_path = os.path.join(root_dir, subfolder)
+		if not os.path.exists(subfolder_path):
+			print("\tMaking folder %s" % subfolder)
+			os.makedirs(subfolder_path)
+
+
+def token_to_embed(doc_token_list, factory, max_tokens):
+
+	# Count how many sentences
+	n_sentences = sum([len(x) for x in doc_token_list])
+
+	# Initialize
+	ds_embedding = np.zeros((n_sentences, max_tokens, factory.embedding_dims))
+
+	# Convert words to vector embeddings
+	sentence_i = 0
+	for i, doc in enumerate(doc_token_list):
+		for j, sentence in enumerate(doc):
+			if j + 1 > n_sentences:
+				break
+			sentence_embedding = np.zeros((max_tokens, factory.embedding_dims))
+			for k, word in enumerate(sentence):
+				if k + 1 > max_tokens:
+					break
+				word_embedding = factory.token_index[word]
+				if word_embedding is not None:
+					sentence_embedding[k] = word_embedding
+
+
+			# Append
+			ds_embedding[sentence_i] = sentence_embedding
+			sentence_i += 1
+
+	return ds_embedding
+
+
+def doc_to_embedding(doc_token_list, factory, max_tokens):
+
+	# Count how many sentences
+	n_doc = len(doc_token_list)
+
+	# Initialize
+	ds_embedding = np.zeros((n_doc, max_tokens, factory.embedding_dims))
+
+	# Convert words to vector embeddings
+	for doc_i, doc in enumerate(doc_token_list):
+		for j, sentence in enumerate(doc):
+			token_i = 0
+			sentence_embedding = np.zeros((max_tokens, factory.embedding_dims))
+			for k, word in enumerate(sentence):
+				token_i += 1
+
+				if token_i > max_tokens:
+					break
+				word_embedding = factory.token_index[word]
+				if word_embedding is not None:
+					sentence_embedding[token_i - 1] = word_embedding
+
+
+		# Append
+		ds_embedding[doc_i] = sentence_embedding
+
+	return ds_embedding
+
+
+def doc_to_token(doc_token_list, factory, max_tokens):
+
+	# Count how many sentences
+	n_doc = len(doc_token_list)
+
+	# Initialize
+	ds_embedding = np.zeros((n_doc, max_tokens))
+
+	# Convert words to vector embeddings
+	for doc_i, doc in enumerate(doc_token_list):
+
+		token_i = 0
+		for j, sentence in enumerate(doc):
+			if token_i + 1 > max_tokens:
+				break;
+			for token in sentence:
+				if token_i + 1 > max_tokens:
+					break;
+				ds_embedding[doc_i, token_i] = token
+				token_i += 1
+
+	return ds_embedding
+
+
+
 # Trail a sentence level model
 def train_han(tokenizer):
 
@@ -37,8 +144,8 @@ def train_han(tokenizer):
 	factory = SentenceModelFactory(
 		num_classes=2, 
 		token_index=tokenizer.token_index, 
-		max_sents=500, 
-		max_tokens=200, 
+		max_sents=MAX_SENTS, 
+		max_tokens=MAX_TOKENS, 
 		embedding_type='glove.6B.100d')
 
 	# Hieararchy
@@ -53,16 +160,18 @@ def train_han(tokenizer):
 	return model
 
 
-
-
-if __name__ == '__main__':
+def main():
 
 	# Steps to perform
 	BUILD_TOKENIZER = False
 	BUILD_DATASET   = False
-	CONFIG_MODEL	= True
-	TRAIN_MODEL     = True
+	CONFIG_MODEL	= False
+	PREP_DATA       = False
+	TRAIN_MODEL     = False
 	INFERENCE       = True
+
+	# Make directory if doesn't exist
+	initialize_dir(data_base)
 
 	# Read data
 	print("=== Loading Data")
@@ -74,6 +183,7 @@ if __name__ == '__main__':
 		tokenizer = SentenceWordTokenizer()
 		tokenizer.build_vocab(data.data['x'])
 
+
 	# Build a Dataset
 	if BUILD_DATASET:
 		print("=== Building Dataset")
@@ -82,7 +192,7 @@ if __name__ == '__main__':
 		ds.save('../data/dataset/dataset_example')
 	else:
 		print("=== Loading Saved Dataset")
-		ds = load(file_name='../data/dataset/dataset_example')
+		ds = load(file_name=os.path.join(data_base, 'dataset', 'dataset_example'))
 		print(ds)
 		print(type(ds))
 		print(vars(ds).keys())
@@ -90,116 +200,147 @@ if __name__ == '__main__':
 		print(ds.y.tolist()[0:3])
 		tokenizer = ds.tokenizer
 
-	print(":::::::::::::::: tokenizer.get_stats")
-	print(ds.tokenizer.get_stats(0))
-	print(":::::::::::::::: tokenizer.get_stats")
-	print(ds.tokenizer.get_stats(1))
-
-	# Build training data
-	X_train = ds.tokenizer.encode_texts(ds.X.tolist()[1:100])
-	X_train = ds.tokenizer.decode_texts(ds.X)
-
-	print(X_train.shape)
-	print(X_train[1:100])
-
-	sys.exit("Stop here")
-
-
-
 
 	# Will automagically handle padding for models that require padding (Ex: Yoon Kim CNN)
 	if CONFIG_MODEL:
 		print("=== Tokenizing Dataset and Padding")
-		factory = TokenModelFactory(1, tokenizer.token_index, max_tokens=100, embedding_type='glove.6B.100d')
-		word_encoder_model = YoonKimCNN()
+		sentence_model = True
 
-		# Train Model
-		print("=== Configuring Model")
-		model = factory.build_model(token_encoder_model=word_encoder_model)
-		model.compile(optimizer='adam', loss='categorical_crossentropy')
-		model.summary()
+
+		if sentence_model:
+			
+			factory = TokenModelFactory(2, tokenizer.token_index, max_tokens=MAX_TOKENS, embedding_type='glove.6B.100d')
+			sentence_encoder_model = StackedRNN()
+
+			# Train Model
+			print("=== Configuring Model")
+			model = factory.build_model(token_encoder_model=sentence_encoder_model)
+			model.compile(optimizer='adam', loss='categorical_crossentropy')
+			model.summary()
+		else:
+
+			factory = TokenModelFactory(1, tokenizer.token_index, max_tokens=MAX_TOKENS, embedding_type='glove.6B.100d')
+			word_encoder_model = YoonKimCNN()
+
+			# Train Model
+			print("=== Configuring Model")
+			model = factory.build_model(token_encoder_model=word_encoder_model)
+			model.compile(optimizer='adam', loss='categorical_crossentropy')
+			model.summary()
 
 		# Save
 		dump(factory, file_name='../data/embeddings/factory_example')
-		dump(model, file_name='../data/models/YoonKimCNN_example')
+		dump(model, file_name='../data/models/StackedRNN')
 	else:
 		print("=== Loading Embeddings Configuration")
 		factory = load(file_name='../data/embeddings/factory_example')
 		print("=== Loading Model Configuration")
-		model   = load(file_name='../data/models/YoonKimCNN_example')
+		model   = load(file_name='../data/models/StackedRNN')
+		model.summary()
+
+
+
+	if PREP_DATA:
+
+		print("=== Preparing Training Data")
+
+		# Build training data
+		X_train = ds.tokenizer.encode_texts(ds.X.tolist())
+		# X_train = ds.tokenizer.decode_texts(X_train)
+
+		# Save
+		dump(X_train, file_name='../data/dataset/prepped_data_token')
+	else:
+		print("=== Loading Prepped Dataset")
+		X_train = load(file_name='../data/dataset/prepped_data_token')
+
+
+
+
+
+
 
 
 	if TRAIN_MODEL:
 		print("=== Training Model")
 
+
 		# Build training data
-		X_train = tokenizer.encode_texts(ds.X.tolist())
-		X_train = tokenizer.decode_texts(ds.X)
+		# ds_embedding = token_to_embed(X_train, factory, MAX_TOKENS)
+		ds_embedding = doc_to_token(X_train, factory, MAX_TOKENS)
+		
+		print("\tTraining data has rows = %d" % ds_embedding.shape[0])
 
-		print(X_train[0:3])
+		# Convert from array to categorical
+		y_train = to_categorical(ds.y)
 
-		model.fit(X_train, ds.y,
-			epochs=20,
-			batch_size=128)
+		# Fit
+		model.fit(x=ds_embedding, y=y_train,
+			epochs=25,
+			batch_size=256)
+
+		# Save
+		model.save('../data/models/StackedRNN_fitted.h5')
+	else:
+		model = load_model('../data/models/StackedRNN_fitted.h5')
+
 
 
 	# Make predictions
 	if INFERENCE:
 		print("=== Making Inference")
-		data_infer = ['I thought the movie was terrible']
-
-		print("\t--- Tokenizing raw inference dataset")		
-		print(vars(tokenizer).keys())
-		ds_infer = tokenizer.encode_texts(data_infer)
-		ds_decode = tokenizer.decode_texts(ds_infer)
-		print(ds_infer)
-		print(ds_decode)
-		print(':::::::::::::: FACTORY')
-		print(type(factory))
-		print(vars(factory).keys())
-		print(factory.embedding_dims)
-		print(factory.max_tokens)
-
-		# Convert words to vector embeddings
-		ds_embedding = np.array([])
-		for i, sentence in enumerate(ds_decode):
-			print('\t\tWorking on sentence %d' % (i + 1))
-			sentence_embedding = np.array([]).reshape(0,100)
-			for j, word in enumerate(sentence):
-				word_embedding = factory.embeddings_index[word.encode()]
-				print("word_embedding.shape")
-				print(word_embedding.shape)
-				if word_embedding is not None:
-					sentence_embedding = np.vstack([sentence_embedding, [word_embedding]])
-					print(sentence_embedding.shape)
-
-			ds_embedding = np.append([ds_embedding], [sentence_embedding])
-
-		print("::::::::::::::::: ds_embedding")
-		print(ds_embedding.shape)
-		print("::::::::::::::::: sentence_embedding")
-		print(sentence_embedding.shape)
-		print("::::::::::::::::: model")
-		print(vars(model).keys())
-
-		# print(ds_embedding[0][0])
-		# print(ds_embedding[0][0].shape)
-		# print(ds_embedding[0][0].T.shape)
+		data_infer = ['I thought the movie was terrible. I hated the characters.','The move was great, but the game was better']
 
 
-		# Describe the model
-		print("::::::::::::::::: model.summary")
-		model.summary()
-		print("::::::::::::::::: model.get_config")
-		pprint(model.get_config())
-		# model.save_weights('../data/models/YoonKimCNN_example_weights')
+		# Build training data
+		X_test = ds.tokenizer.encode_texts(data_infer)
 
+		# Build training data
+		embedding_test = doc_to_token(X_test, factory, MAX_TOKENS)
 
-
-
+		print("\tTest data has rows = %d" % embedding_test.shape[0])
 
 		print("\t--- Feeding tokenized text to model")
-		y_binary = to_categorical(np.array([1, 0, 1, 0, 1, 0]))
-		print(y_binary.shape)
-		pred = model.predict(x=sentence_embedding, verbose=1)
+		pred = model.predict(x=embedding_test, verbose=1)
 		print(pred)
+
+		df_test = pd.DataFrame(pred)
+		df_test['text'] = data_infer
+
+		print(df_test)
+
+
+if __name__ == '__main__':
+	main()
+
+	# test = np.empty((5, 2))
+	# print(test)
+
+	# t = [1,0,0,1,1,0]
+	# t = np.array(t)
+	# print(t)
+	# t = t.reshape([t.shape[0], 1])
+	# print(t)
+
+	# test_raw = [[[1,2,3,4,5],[1,2,3]],
+	# [[3,5,6,6],[9]]]
+
+	# final_list = []
+	# for sentence in test_raw:
+	# 	final_list.append([y for x in sentence for y in x])
+
+	# print(final_list)
+
+	# test[1,1] = 99
+	# print(test)
+
+	# doc_list = np.empty(3)
+	# ds_embeddings = np.zeros((5, 2, 10))
+	# sentence_1 = np.empty((2, 10))
+	# ds_embeddings[1] = sentence_1
+	# print(ds_embeddings)
+	# doc_list[0] = sentence_1
+	# print(sentence_1)
+
+
+
