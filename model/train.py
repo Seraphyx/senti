@@ -158,11 +158,11 @@ def main():
 	BUILD_TOKENIZER = False
 	BUILD_DATASET   = False
 	PREP_DATA       = False
-	TRAIN_MODEL     = True
+	TRAIN_MODEL     = False
 	INFERENCE       = True
 
 	# Filenames
-	path_model = os.path.join(data_base, 'models', 'HAN_fitted.h5')
+	path_model = os.path.join(data_base, 'models', 'StackedRNN_fitted.h5')
 
 	# Make directory if doesn't exist
 	initialize_dir(data_base)
@@ -281,12 +281,21 @@ def main():
 			'The movie was great, but the game was better',
 			'Nothing in the movie was terrible. It was great.']
 
+		data_infer = ['I hated that movie']
+
 
 		# Build training data
 		X_test = ds.tokenizer.encode_texts(data_infer)
 
+		print('=== X_test')
+		print(X_test)
+
 		# Build training data
 		embedding_test = doc_to_token(X_test, factory, MAX_TOKENS)
+
+		
+		print('=== embedding_test')
+		print(embedding_test)
 
 		print("\tTest data has rows = %d" % embedding_test.shape[0])
 
