@@ -3,7 +3,6 @@ import os
 
 import numpy as np
 import tensorflow as tf
-from functools import wraps
 from flask import Flask, request, jsonify
 # from werkzeug.contrib.cache import SimpleCache
 
@@ -145,35 +144,12 @@ def predict(text):
 
 with app.app_context():
     # within this block, current_app points to app.
-    print("app_context================")
     initialize()
 
 
 
 # run the app.
 if __name__ == "__main__":
-
-	# Cache
-	# cache = SimpleCache()
-
-	# Initialize Model dependencies
-	initialize()
-
-	# print(cache.get('ds'))
-
-
-
-	# data = b'I hated that movie'
-	# pred = predict(data)
-	# print('===============pred')
-	# print(pred)
-
-
-
-
-
-
-
 
 	# Setting debug to True enables debug output. This line should be
 	# removed before deploying a production app.
