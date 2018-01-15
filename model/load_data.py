@@ -41,6 +41,12 @@ class data(object):
 			print("No dataset provided.")
 
 
+class DataBatch(object):
+
+	def __init__(self, path, data):
+		self.path = path
+		self.data = data
+
 if __name__ == '__main__':
 
 	movie_train = data(dataset='acllmdb')

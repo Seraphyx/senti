@@ -1,18 +1,22 @@
 # Use an official Python runtime as a parent image
 # FROM python:3.6-slim
 # FROM tensorflow/tensorflow
-FROM tiangolo/uwsgi-nginx-flask
+FROM tiangolo/uwsgi-nginx-flask:python3.5
 
 LABEL maintainer="seraphyx@github.com"
 
 # Add git
 RUN apt-get update && apt-get install -y --no-install-recommends git
 
+ENV STATIC_INDEX 1
+
+COPY . /app
+
 # Set the working directory to /app
-WORKDIR /app
+# WORKDIR /app
 
 # Copy the current directory contents into the container at /app
-ADD . /app
+# ADD . /app
 
 # Ser Flask app
 ENV FLASK_APP=$PWD/app/server/app.py
@@ -51,8 +55,11 @@ RUN python -m spacy download en
 # View images
 # docker images
 #
+# Run the image
+# docker run -it --rm --name senti -p 80:80 senti
+#
 # Run the image in detach mode
-# docker run -it --rm -p 5000:5000 senti
+# docker run -it -d --rm --name senti -p 80:80 senti
 #
 # For proper use replace "/home/ec2-user/ds-docker" with the current directory
 # docker run -it --rm -p 8888:8888 -v /home/ec2-user/ds-docker:/home/jovyan/work senti
