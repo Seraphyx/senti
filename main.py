@@ -108,10 +108,16 @@ def model():
 	if request.method == 'POST':
 
 		# What the client sends as header type TEXT
+		print('=== GETTING data from req')
 		data = request.data
+		print('=== GOT data from req')
+		print(data)
 
 		# Get Prediction
+		print('=== GETTING prediction')
 		pred = predict(data)
+		print(pred)
+		print('=== GOT prediction')
 
 		return jsonify(pred)
 
@@ -140,15 +146,15 @@ def initialize():
 
 	print('=== Caching Tokenizer')
 	global ds, factory, model
-	ds = load(file_name=os.path.join(data_base, 'dataset', 'dataset_example'))
+	ds = load(file_name=os.path.join(data_base, 'server', 'dataset_example'))
 	# cache.set('ds', ds)
 
 	print('=== Caching Factory')
-	factory = load(file_name=os.path.join(data_base, 'embeddings', 'factory_example'))
+	factory = load(file_name=os.path.join(data_base, 'server', 'factory_example'))
 	# cache.set('factory', factory)
 
 	print('=== Caching Model')
-	model = load_model(os.path.join(data_base, 'models', 'StackedRNN_fitted.h5'))
+	model = load_model(os.path.join(data_base, 'server', 'StackedRNN_fitted.h5'))
 	# cache.set('model', model)
 	# model.summary()
 
@@ -162,15 +168,20 @@ def predict(text):
 	global ds, factory, model
 
 	# Decode Text to UTF-8
+	print('=== DECODING text')
 	text = text.decode('utf-8')
 
 	# Get token id list
+	print('=== TOKENIZING text')
 	X_test = ds.tokenizer.encode_texts([text])
 
 	# Build training data
+	print('=== EMBEDDING text')
 	embedding_test = doc_to_token(X_test, factory, MAX_TOKENS)
+	print(embedding_test)
 
 	# Get Sentiment
+	print('=== PREDICTING text')
 	pred = model.predict(x=embedding_test, verbose=1)
 
 	return {

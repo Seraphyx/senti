@@ -1,2 +1,3 @@
 # Don't add data folder
 data/*
+!data/server/*

@@ -10,13 +10,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends git
 
 ENV STATIC_INDEX 1
 
-COPY . /app
 
 # Set the working directory to /app
-# WORKDIR /app
+WORKDIR /app
 
 # Copy the current directory contents into the container at /app
-# ADD . /app
+ADD ./ /app
+# COPY . /app
 
 # Ser Flask app
 ENV FLASK_APP=$PWD/app/server/app.py

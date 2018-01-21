@@ -7,3 +7,4 @@ emojipedia
 gensim
 joblib
 jsonpickle
+h5py
