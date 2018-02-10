@@ -1,8 +1,8 @@
 import sys
 import os
+import time
 
 import numpy as np
-
 from keras.utils import to_categorical
 from keras.models import load_model
 
@@ -199,11 +199,20 @@ if __name__ == '__main__':
 
 		print("\t--- Tokenizing raw inference dataset")		
 		print(vars(tokenizer).keys())
+		start = time.time()
 		x_test = tokenizer.encode_texts(data_infer)
+		end = time.time()
+		print("Tokenizer [%s]" % (end - start))
+		start = time.time()
 		x_test = doc_to_sentence(x_test, MAX_SENTS, MAX_TOKENS)
+		end = time.time()
+		print("Document Embedding [%s]" % (end - start))
 
 		print("\t--- Feeding tokenized text to model")
+		start = time.time()
 		pred = model.predict(x=x_test, verbose=1)
+		end = time.time()
+		print("Inference [%s]" % (end - start))
 		print(pred)
 		print(data_infer)
 
