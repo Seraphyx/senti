@@ -12,6 +12,7 @@ from keras_text.models.token_model import TokenModelFactory
 from keras_text.models import SentenceModelFactory
 from keras_text.models import YoonKimCNN, AttentionRNN, StackedRNN, AveragingEncoder
 from keras_text.utils import dump, load
+from keras_text.models.layers import *
 
 
 import load_data
@@ -115,7 +116,7 @@ if __name__ == '__main__':
 	# Steps to perform
 	BUILD_TOKENIZER = False
 	BUILD_DATASET   = False
-	TRAIN_MODEL     = True
+	TRAIN_MODEL     = False
 	INFERENCE       = True
 
 	NUM_CLASSES = 2
@@ -184,7 +185,8 @@ if __name__ == '__main__':
 		print("=== Loading Embeddings")
 		factory = load(file_name=os.path.join(save_directory, 'embeddings', 'factory_sent'))
 		print("=== Loading Model")
-		model = load_model(file_name=os.path.join(save_directory, 'models', model_name))
+		model = load_model(os.path.join(save_directory, 'models', model_name),
+			custom_objects={'AttentionLayer': AttentionLayer})
 
 
 	# Make predictions
@@ -201,7 +203,7 @@ if __name__ == '__main__':
 		x_test = doc_to_sentence(x_test, MAX_SENTS, MAX_TOKENS)
 
 		print("\t--- Feeding tokenized text to model")
-		pred = model.fit(x=x_test)
+		pred = model.predict(x=x_test, verbose=1)
 		print(pred)
 		print(data_infer)
 

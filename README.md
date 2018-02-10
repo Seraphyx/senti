@@ -76,5 +76,10 @@ There are various steps where we can intervene and modify to generate a better p
     * **HAN**
 
 
+# Presentation
+1. Show that the model can adapt to negations "good" and "not good".
+    * Show the polarizing words of the Word2Vec close together as well as the negation words are close together. This implies that the embeddings are similar. This is turn tells us that the model will handle them in general fashion - that is, as long as the model is able to find the switch.
+    * 
+
 
 
