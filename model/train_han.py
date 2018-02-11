@@ -1,8 +1,10 @@
 import sys
 import os
 import time
+import platform
 
 import numpy as np
+import gensim
 from keras.utils import to_categorical
 from keras.models import load_model
 
@@ -13,6 +15,7 @@ from keras_text.models import SentenceModelFactory
 from keras_text.models import YoonKimCNN, AttentionRNN, StackedRNN, AveragingEncoder
 from keras_text.utils import dump, load
 from keras_text.models.layers import *
+from keras_text.embeddings import _EMBEDDINGS_CACHE
 
 
 import load_data
@@ -30,6 +33,14 @@ See: https://raghakot.github.io/keras-text/
 
 # tokenizer = WordTokenizer()
 # tokenizer.build_vocab(texts)
+
+
+def GetDataDir():
+    plat = platform.platform()
+    if "Windows" in plat:
+        return "G:/Projects/senti/data/" 
+    else:
+        return "/Users/jasonpark/documents/project/senti/data/"
 
 
 def doc_to_sentence(doc_token_list, max_sents, max_tokens):
@@ -116,7 +127,7 @@ if __name__ == '__main__':
 	# Steps to perform
 	BUILD_TOKENIZER = False
 	BUILD_DATASET   = False
-	TRAIN_MODEL     = False
+	TRAIN_MODEL     = True
 	INFERENCE       = True
 
 	NUM_CLASSES = 2
@@ -125,6 +136,9 @@ if __name__ == '__main__':
 
 	# Read data
 	print("=== Loading Data")
+
+	root_path = GetDataDir()
+
 	data = load_data.data(dataset='acllmdb')
 
 	# Build a token. Be default it uses 'en' model from SpaCy
@@ -148,9 +162,24 @@ if __name__ == '__main__':
 	# Will automagically handle padding for models that require padding (Ex: Yoon Kim CNN)
 	if TRAIN_MODEL:
 
+		# Get custom embedings
+		print("=== Loading Custom Word2Vec")
+		w2v = gensim.models.Word2Vec.load(os.path.join(root_path, 'example', 'mymodel'))
+
+		# Convert from gensim wv to dict
+		embed = {k : w2v.wv[k] for k in w2v.wv.index2word}
+
+		# Assign gensim to model
+		_EMBEDDINGS_CACHE['mymodel'] = embed
+
 		# Can also use `max_sents=None` to allow variable sized max_sents per mini-batch.
 		print("=== Tokenizing Dataset and Padding")
-		factory = SentenceModelFactory(NUM_CLASSES, tokenizer.token_index, max_sents=MAX_SENTS, max_tokens=MAX_TOKENS, embedding_type='glove.6B.100d')
+		factory = SentenceModelFactory(
+			NUM_CLASSES, 
+			tokenizer.token_index, 
+			max_sents=MAX_SENTS, 
+			max_tokens=MAX_TOKENS, 
+			embedding_type='mymodel')
 		word_encoder_model = AttentionRNN()
 		sentence_encoder_model = AttentionRNN()
 
